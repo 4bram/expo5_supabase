@@ -22,6 +22,20 @@ export function mostrarLoginView({
 
           <div class="campo">
 
+            <label for="name">
+              Nombre (solo para registrarte)
+            </label>
+
+            <input
+              type="text"
+              id="name"
+              placeholder="Tu nombre"
+            >
+
+          </div>
+
+          <div class="campo">
+
             <label for="email">
               Correo electrónico
             </label>
@@ -126,9 +140,13 @@ export function configurarLoginView({
       const password =
         document.querySelector('#password').value
 
+      const name =
+        document.querySelector('#name').value.trim()
+        
       onRegistro({
         email,
-        password
+        password,
+        name
       })
     }
   )

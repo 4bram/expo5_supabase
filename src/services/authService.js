@@ -2,20 +2,25 @@ import { supabase } from '../config/supabase.js'
 
 export async function registrarUsuario(
   email,
-  password
+  password,
+  name
 ) {
   const { data, error } =
     await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: { data: { name } }
     })
+
+  if (!error && data.session) {
+    await crearPerfilSiNoExiste(data.user, name)
+  }
 
   return {
     data,
     error
   }
 }
-
 
 export async function iniciarSesion(
   email,
@@ -27,6 +32,9 @@ export async function iniciarSesion(
       password
     })
 
+  if (!error) {
+    await crearPerfilSiNoExiste(data.user)
+  }
   return {
     data,
     error
@@ -54,4 +62,40 @@ export async function obtenerUsuarioActual() {
     user,
     error
   }
+}
+
+export async function crearPerfilSiNoExiste(user, name) {
+  const nombre =
+    name ||
+    user.user_metadata?.name ||
+    user.email.split('@')[0]
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(
+      { id: user.id, name: nombre },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
+
+  return { error }
+}
+
+
+export async function obtenerPerfil(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .eq('id', userId)
+    .single()
+
+  return { data, error }
+}
+
+export async function cambiarContrasena(nuevaContrasena) {
+  const { data, error } =
+    await supabase.auth.updateUser({
+      password: nuevaContrasena
+    })
+
+  return { data, error }
 }

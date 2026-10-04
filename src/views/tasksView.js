@@ -1,7 +1,7 @@
 const app = document.querySelector('#app')
 
 
-export function mostrarTasksView(user) {
+export function mostrarTasksView(user,nombre) {
   app.innerHTML = `
     <main class="tasks-page">
 
@@ -16,7 +16,7 @@ export function mostrarTasksView(user) {
 
           <p>
             Sesión iniciada como:
-            <strong>${user.email}</strong>
+            <strong id="nombreUsuario"></strong>
           </p>
         </div>
 
@@ -29,6 +29,57 @@ export function mostrarTasksView(user) {
 
       </header>
 
+
+      <!-- ==============================
+           MI CUENTA
+      ============================== -->
+
+      <section class="panel">
+
+        <h2>Mi cuenta</h2>
+
+        <p>
+          <strong>Nombre:</strong>
+          <span id="cuentaNombre"></span>
+        </p>
+
+        <p>
+          <strong>Correo:</strong>
+          <span id="cuentaCorreo"></span>
+        </p>
+
+        <form id="passwordForm">
+
+          <div class="campo">
+
+            <label for="nuevaPassword">
+              Nueva contraseña
+            </label>
+
+            <input
+              id="nuevaPassword"
+              type="password"
+              required
+              placeholder="Mínimo 6 caracteres"
+            >
+
+          </div>
+
+          <button
+            type="submit"
+            class="btn-principal"
+          >
+            Cambiar contraseña
+          </button>
+
+        </form>
+
+        <p
+          id="passwordMensaje"
+          class="mensaje"
+        ></p>
+
+      </section>
 
       <!-- ==============================
            CREAR TAREA
@@ -123,6 +174,59 @@ export function mostrarTasksView(user) {
 
       </section>
 
+      <!-- ==============================
+           COMPARTIR TAREA
+      ============================== -->
+
+      <section class="panel">
+
+        <h2>Compartir tarea</h2>
+
+        <form id="shareForm">
+
+          <div class="campo">
+
+            <label for="shareTask">
+              Tarea
+            </label>
+
+            <select
+              id="shareTask"
+              required
+            ></select>
+
+          </div>
+
+
+          <div class="campo">
+
+            <label for="shareUser">
+              Compartir con
+            </label>
+
+            <select
+              id="shareUser"
+              required
+            ></select>
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="btn-principal"
+          >
+            Compartir
+          </button>
+
+        </form>
+
+        <p
+          id="shareMensaje"
+          class="mensaje"
+        ></p>
+
+      </section>
 
       <!-- ==============================
            PANEL EDUCATIVO RLS
@@ -262,6 +366,14 @@ export function mostrarTasksView(user) {
 
     </main>
   `
+  document.querySelector('#nombreUsuario').textContent =
+    nombre || user.email
+
+  document.querySelector('#cuentaNombre').textContent =
+    nombre || '(sin perfil)'
+    
+  document.querySelector('#cuentaCorreo').textContent =
+    user.email
 }
 
 
@@ -274,7 +386,9 @@ export function configurarTasksView({
   onLogout,
   onBuscarPorId,
   onModificarPorId,
-  onEliminarPorId
+  onEliminarPorId,
+  onCambiarPassword,
+  onCompartir
 }) {
 
   const form =
@@ -352,6 +466,53 @@ export function configurarTasksView({
     'click',
     () => {
       onLogout()
+    }
+  )
+
+  // Cambiar contraseña
+
+  const passwordForm =
+    document.querySelector('#passwordForm')
+
+  passwordForm.addEventListener(
+    'submit',
+    event => {
+
+      event.preventDefault()
+
+      const nueva =
+        document.querySelector('#nuevaPassword').value
+
+      passwordForm.reset()
+
+      onCambiarPassword(nueva)
+    }
+  )
+
+    // Compartir tarea
+
+  const shareForm =
+    document.querySelector('#shareForm')
+
+  shareForm.addEventListener(
+    'submit',
+    event => {
+
+      event.preventDefault()
+
+      const taskId =
+        Number(
+          document.querySelector('#shareTask').value
+        )
+
+      const userId =
+        document.querySelector('#shareUser').value
+
+      if (!taskId || !userId) {
+        return
+      }
+
+      onCompartir(taskId, userId)
     }
   )
 
@@ -546,6 +707,89 @@ export function mostrarResultadoRls(
     `rls-result ${tipo}`
 }
 
+// ==========================================
+// MOSTRAR MENSAJES DE PASSWORD
+// ==========================================
+export function mostrarMensajePassword(
+  mensaje,
+  tipo = 'normal'
+) {
+  const elemento =
+    document.querySelector('#passwordMensaje')
+
+  if (!elemento) {
+    return
+  }
+
+  const icono =
+    tipo === 'success' ? '✔ ' :
+    tipo === 'error' ? '✖ ' : ''
+
+  elemento.textContent = icono + mensaje
+}
+
+// ==========================================
+// COMPARTIR TAREAS
+// ==========================================
+
+export function mostrarOpcionesCompartir({
+  tareas,
+  perfiles
+}) {
+  const selectTarea =
+    document.querySelector('#shareTask')
+
+  const selectUsuario =
+    document.querySelector('#shareUser')
+
+  if (!selectTarea || !selectUsuario) {
+    return
+  }
+
+  selectTarea.replaceChildren()
+
+  tareas.forEach(tarea => {
+    const opcion =
+      document.createElement('option')
+
+    opcion.value = tarea.id
+    opcion.textContent =
+      `${tarea.id} - ${tarea.title}`
+
+    selectTarea.appendChild(opcion)
+  })
+
+  selectUsuario.replaceChildren()
+
+  perfiles.forEach(perfil => {
+    const opcion =
+      document.createElement('option')
+
+    opcion.value = perfil.id
+    opcion.textContent = perfil.name
+
+    selectUsuario.appendChild(opcion)
+  })
+}
+
+
+export function mostrarMensajeCompartir(
+  mensaje,
+  tipo = 'normal'
+) {
+  const elemento =
+    document.querySelector('#shareMensaje')
+
+  if (!elemento) {
+    return
+  }
+
+  const icono =
+    tipo === 'success' ? '✔ ' :
+    tipo === 'error' ? '✖ ' : ''
+
+  elemento.textContent = icono + mensaje
+}
 
 // ==========================================
 // MOSTRAR TAREAS
@@ -553,6 +797,7 @@ export function mostrarResultadoRls(
 
 export function mostrarTareas({
   tareas,
+  usuarioId,
   onCambiarEstado,
   onEliminar
 }) {
@@ -619,6 +864,15 @@ export function mostrarTareas({
                     : 'Pendiente'
                 }
               </span>
+              
+              <span>
+                <strong>Tipo:</strong>
+                ${
+                  tarea.user_id === usuarioId
+                    ? 'Propia'
+                    : 'Compartida contigo'
+                }
+              </span>
 
             </div>
 
@@ -643,13 +897,17 @@ export function mostrarTareas({
             </button>
 
 
-            <button
-              class="btn-eliminar"
-              data-action="eliminar"
-              data-id="${tarea.id}"
-            >
-              Eliminar
-            </button>
+            ${
+              tarea.user_id === usuarioId
+                ? `<button
+                    class="btn-eliminar"
+                    data-action="eliminar"
+                    data-id="${tarea.id}"
+                  >
+                    Eliminar
+                  </button>`
+                : ''
+            }
 
           </div>
 

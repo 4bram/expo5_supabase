@@ -2,7 +2,9 @@ import {
   registrarUsuario,
   iniciarSesion,
   cerrarSesion,
-  obtenerUsuarioActual
+  obtenerUsuarioActual,
+  obtenerPerfil,
+  cambiarContrasena
 } from './services/authService.js'
 
 import {
@@ -14,7 +16,9 @@ import {
   modificarTareaPorId,
   eliminarTareaPorId,
   suscribirseATareas,
-  cancelarSuscripcion
+  cancelarSuscripcion,
+  obtenerPerfiles,
+  compartirTarea
 } from './services/taskService.js'
 
 import {
@@ -29,7 +33,10 @@ import {
   mostrarTareas,
   mostrarCargandoTareas,
   limpiarFormularioTarea,
-  mostrarResultadoRls
+  mostrarResultadoRls,
+  mostrarMensajePassword,
+  mostrarOpcionesCompartir,
+  mostrarMensajeCompartir
 } from './views/tasksView.js'
 
 import {
@@ -92,7 +99,9 @@ async function mostrarPantallaTareas(
   usuarioActual = user
 
 
-  mostrarTasksView(user)
+  const { data: perfil } = await obtenerPerfil(user.id)
+
+  mostrarTasksView(user, perfil?.name)
 
 
   configurarTasksView({
@@ -103,7 +112,11 @@ async function mostrarPantallaTareas(
     onModificarPorId:
       manejarModificarTareaPorId,
     onEliminarPorId:
-      solicitarEliminarTareaPorId
+      solicitarEliminarTareaPorId,
+    onCambiarPassword:
+      manejarCambiarPassword,
+    onCompartir:
+      manejarCompartir
   })
 
 
@@ -158,7 +171,8 @@ async function manejarLogin({
 
 async function manejarRegistro({
   email,
-  password
+  password,
+  name
 }) {
   if (!email || !password) {
     mostrarMensajeLogin(
@@ -174,7 +188,8 @@ async function manejarRegistro({
     error
   } = await registrarUsuario(
     email,
-    password
+    password,
+    name
   )
 
 
@@ -226,6 +241,43 @@ async function manejarLogout() {
   )
 }
 
+async function manejarCambiarPassword(
+  nuevaPassword
+) {
+  if (
+    !nuevaPassword ||
+    nuevaPassword.length < 6
+  ) {
+    mostrarMensajePassword(
+      'La contraseña debe tener al menos 6 caracteres.',
+      'error'
+    )
+
+    return
+  }
+
+
+  const { error } =
+    await cambiarContrasena(nuevaPassword)
+
+
+  if (error) {
+    mostrarMensajePassword(
+      'Error: ' + error.message,
+      'error'
+    )
+
+    return
+  }
+
+
+  mostrarMensajePassword(
+    'Contraseña actualizada correctamente.',
+    'success'
+  )
+}
+
+
 
 // ==========================================
 // CRUD NORMAL
@@ -253,12 +305,24 @@ async function cargarTareas() {
 
   mostrarTareas({
     tareas: data,
-
+    usuarioId: usuarioActual.id,
+    
     onCambiarEstado:
       manejarCambioEstado,
 
     onEliminar:
       solicitarEliminarTarea
+  })
+  
+  const { data: perfiles } = await obtenerPerfiles()
+
+  mostrarOpcionesCompartir({
+    tareas: data.filter(
+      tarea => tarea.user_id === usuarioActual.id
+    ),
+    perfiles: (perfiles || []).filter(
+      perfil => perfil.id !== usuarioActual.id
+    )
   })
 }
 
@@ -510,6 +574,33 @@ function solicitarEliminarTareaPorId(id) {
   })
 }
 
+// ==========================================
+// COMPARTIR TAREAS
+// ==========================================
+
+async function manejarCompartir(
+  taskId,
+  userId
+) {
+  const { error } =
+    await compartirTarea(taskId, userId)
+
+
+  if (error) {
+    mostrarMensajeCompartir(
+      'Error: ' + error.message,
+      'error'
+    )
+
+    return
+  }
+
+
+  mostrarMensajeCompartir(
+    'Tarea compartida correctamente.',
+    'success'
+  )
+}
 
 // ==========================================
 // REALTIME

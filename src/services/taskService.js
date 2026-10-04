@@ -128,6 +128,45 @@ export async function eliminarTareaPorId(id) {
   }
 }
 
+// ==========================================
+// COMPARTIR TAREAS
+// ==========================================
+
+export async function obtenerPerfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .order('name', {
+      ascending: true
+    })
+
+  return {
+    data,
+    error
+  }
+}
+
+
+export async function compartirTarea(
+  taskId,
+  userId
+) {
+  const { data, error } = await supabase
+    .from('task_shares')
+    .insert([
+      {
+        task_id: taskId,
+        user_id: userId,
+        permission: 'edit'
+      }
+    ])
+    .select()
+
+  return {
+    data,
+    error
+  }
+}
 
 // ==========================================
 // REALTIME
